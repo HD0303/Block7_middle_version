@@ -3,6 +3,8 @@ package com.cookandroid.block7
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ObjectAnimator
+import android.content.Intent
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageView
@@ -81,6 +83,11 @@ class GameActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.game_activity)
+
+        val musicIntent = Intent(this, MusicService::class.java)
+        musicIntent.action = "CHANGE_MUSIC"
+        musicIntent.putExtra("MUSIC_RES_ID", R.raw.game_background_music) // 새 배경음악 리소스 ID
+        startService(musicIntent)
 
         member_dameun  = Member(this,"dameun", "담은", findViewById(R.id.member_dameun))
         member_eunju  = Member(this,"eunju", "은주", findViewById(R.id.member_eunju))

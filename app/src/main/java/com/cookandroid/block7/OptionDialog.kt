@@ -1,110 +1,74 @@
 package com.cookandroid.block7
 
-import android.content.Context
-import android.content.SharedPreferences
-import android.media.MediaPlayer
+import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
+import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.Switch
-import androidx.appcompat.app.AppCompatActivity
 
-class OptionDialog : AppCompatActivity() {
 
-    private lateinit var mplayerBackground: MediaPlayer
-    private lateinit var mplayerButtonClick: MediaPlayer
-    private lateinit var sharedPreferences: SharedPreferences
-
+class OptionDialog : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.option_dialog)
 
-        val bgmControl = findViewById<SeekBar>(R.id.background_music_control)
-        val clickControl = findViewById<SeekBar>(R.id.ingame_music_control)
-        val backgroundMusicSwitch = findViewById<Switch>(R.id.background_music_switch)
-        val buttonClickMusicSwitch = findViewById<Switch>(R.id.button_click_switch)
-        val exitOptionButton = findViewById<Button>(R.id.exit_option_button)
+        val musicVolumeControl: SeekBar = findViewById(R.id.music_volume_seekbar)
+        val soundVolumeControl: SeekBar = findViewById(R.id.effect_sound_volume_seekbar)
+        val musicVolumeOnOffSwitch: Switch = findViewById(R.id.music_volume_onoff)
+        val soundVolumeOnOffSwitch: Switch = findViewById(R.id.effect_sound_volume_onoff)
 
-        sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        val dbHelper = SoundSettingsDbHelper(this)
+        val latestSettings = dbHelper.getLatestSoundSettings()
 
-        // Initialize media players
-        mplayerBackground = MediaPlayer.create(this, R.raw.mainpage_background_music)
-        mplayerButtonClick = MediaPlayer.create(this, R.raw.button_click_music)
+        latestSettings?.let {
+            val musicVolume = it.getAsInteger(SoundSettingsDbHelper.COLUMN_MUSIC_VOLUME) ?: 100
+            val musicVolumeOnOff = it.getAsInteger(SoundSettingsDbHelper.COLUMN_MUSIC_VOLUME_ON_OFF) ?: 1
+            val effectVolume = it.getAsInteger(SoundSettingsDbHelper.COLUMN_EFFECT_VOLUME) ?: 100
+            val effectVolumeOnOff = it.getAsInteger(SoundSettingsDbHelper.COLUMN_EFFECT_VOLUME_ON_OFF) ?: 1
 
-        // 배경음악을 켜거나 끄는 버튼
-        backgroundMusicSwitch.isChecked = sharedPreferences.getBoolean(KEY_BGM_SWITCH, true)
-        backgroundMusicSwitch.setOnCheckedChangeListener { _, isChecked ->
-            mplayerButtonClick.start()
-
-            if (isChecked) {
-                if (!mplayerBackground.isPlaying) {
-                    mplayerBackground.start()
-                }
-            } else {
-                if (mplayerBackground.isPlaying) {
-                    mplayerBackground.pause()
-                }
-            }
-
-            // 스위치 상태 저장
-            saveSwitchState(KEY_BGM_SWITCH, isChecked)
+            // SeekBar와 Switch 상태 업데이트
+            musicVolumeControl.progress = musicVolume
+            soundVolumeControl.progress = effectVolume
+            musicVolumeOnOffSwitch.isChecked = musicVolumeOnOff == 1
+            soundVolumeOnOffSwitch.isChecked = effectVolumeOnOff == 1
         }
 
-        // 효과음을 켜거나 끄는 버튼
-        buttonClickMusicSwitch.isChecked = sharedPreferences.getBoolean(KEY_BUTTON_CLICK_SWITCH, true)
-        buttonClickMusicSwitch.setOnCheckedChangeListener { _, isChecked ->
-            mplayerButtonClick.start()
-
-            if (isChecked) {
-                if (!mplayerButtonClick.isPlaying) {
-                    mplayerButtonClick.start()
-                }
-            } else {
-                if (mplayerButtonClick.isPlaying) {
-                    mplayerButtonClick.pause()
-                }
-            }
-
-            // 스위치 상태 저장
-            saveSwitchState(KEY_BUTTON_CLICK_SWITCH, isChecked)
-        }
-
-        bgmControl.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val volume = progress.toFloat() / bgmControl.max
-                mplayerBackground.setVolume(volume, volume)
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-
-        clickControl.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val volume = progress.toFloat() / bgmControl.max
-                mplayerButtonClick.setVolume(volume, volume)
-            }
-
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        })
-
-        exitOptionButton.setOnClickListener {
-            mplayerButtonClick.start()
+        val applyButton : ImageButton = findViewById(R.id.apply_button)
+        val closeButton : ImageButton = findViewById(R.id.close_button)
+        closeButton.setOnClickListener{
             finish()
         }
-    }
 
-    private fun saveSwitchState(key: String, isChecked: Boolean) {
-        val editor = sharedPreferences.edit()
-        editor.putBoolean(key, isChecked)
-        editor.apply()
-    }
+        applyButton.setOnClickListener {
 
-    companion object {
-        const val KEY_BGM_SWITCH = "bgm_switch"
-        const val KEY_BUTTON_CLICK_SWITCH = "button_click_switch"
+            val musicVolumeForDB = musicVolumeControl.progress
+            val soundVolumeForDB = soundVolumeControl.progress
+
+            val musicVolumeOnOff = if (musicVolumeOnOffSwitch.isChecked) 1 else 0
+            val effectVolumeOnOff = if (soundVolumeOnOffSwitch.isChecked) 1 else 0
+
+            // 데이터베이스 헬퍼 인스턴스 생성
+            val dbHelper = SoundSettingsDbHelper(this)
+
+            // 데이터 저장
+            dbHelper.saveSoundSettings(musicVolumeForDB, musicVolumeOnOff, soundVolumeForDB, effectVolumeOnOff)
+
+            // 인텐트 생성
+            val serviceIntent = Intent(this, MusicService::class.java)
+
+            // 스위치 및 시크바 상태 읽기
+            val musicVolume = if (!musicVolumeOnOffSwitch.isChecked) musicVolumeControl.progress else 0
+            val soundVolume = if (!soundVolumeOnOffSwitch.isChecked) soundVolumeControl.progress else 0
+
+            // 인텐트에 볼륨 데이터 추가
+            serviceIntent.putExtra("MUSIC_VOLUME", musicVolume)
+            serviceIntent.putExtra("SOUND_VOLUME", soundVolume)
+            serviceIntent.action = "CHANGE_VOLUME"
+
+            // 서비스 시작
+            startService(serviceIntent)
+        }
+
     }
 }
+

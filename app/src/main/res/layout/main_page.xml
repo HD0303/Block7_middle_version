@@ -73,32 +73,34 @@
              />
 
         <ImageButton
-            android:id="@+id/achieve"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            app:layout_constraintHeight_percent="0.1"
-            app:layout_constraintWidth_percent="0.15"
-            app:layout_constraintTop_toBottomOf="@id/startGame"
-            app:layout_constraintStart_toStartOf="@id/startGame"
-            android:background="@null"
-            android:contentDescription="Achievements"
-            android:tag="achieveTag"
-            android:onClick="onAchievementsClick"
-            />
-
-        <ImageButton
             android:id="@+id/option_game"
             android:layout_width="0dp"
             android:layout_height="0dp"
             app:layout_constraintHeight_percent="0.1"
             app:layout_constraintWidth_percent="0.15"
             android:background="@null"
-            app:layout_constraintTop_toBottomOf="@id/achieve"
-            app:layout_constraintStart_toStartOf="@id/achieve"
+            app:layout_constraintTop_toBottomOf="@id/startGame"
+            app:layout_constraintStart_toStartOf="@id/startGame"
             android:tag="optionGameTag"
             android:contentDescription="Game Options"
             android:onClick="onOptionClick"
-           />
+            />
+
+        <ImageButton
+            android:id="@+id/achieve"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintHeight_percent="0.1"
+            app:layout_constraintWidth_percent="0.15"
+            app:layout_constraintTop_toBottomOf="@id/option_game"
+            app:layout_constraintStart_toStartOf="@id/option_game"
+            android:background="@null"
+            android:contentDescription="Achievements"
+            android:tag="achieveTag"
+            android:onClick="onAchievementsClick"
+            />
+
+
 
         <ImageButton
             android:id="@+id/people"
